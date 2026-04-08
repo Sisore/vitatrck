@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sensör Test</title>
+<style>
+  body { background: #111; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 20px; padding: 20px; }
+  button { background: #00e5a0; color: #000; border: none; padding: 20px 40px; font-size: 18px; font-weight: bold; border-radius: 50px; cursor: pointer; }
+  #log { background: #222; padding: 16px; border-radius: 12px; width: 100%; max-width: 400px; font-size: 13px; font-family: monospace; min-height: 100px; }
+</style>
+</head>
+<body>
+<h2>iOS Sensör Test</h2>
+<button id="btn">İzin İste ve Başlat</button>
+<div id="log">Butona bas...</div>
+<script>
+var log = document.getElementById('log');
+function addLog(msg) { log.innerHTML += '<br>' + msg; }
+
+document.getElementById('btn').addEventListener('click', async function() {
+  addLog('Butona basıldı ✓');
+  
+  if (typeof DeviceMotionEvent === 'undefined') {
+    addLog('❌ DeviceMotionEvent yok');
+    return;
+  }
+  addLog('✓ DeviceMotionEvent var');
+  
+  if (typeof DeviceMotionEvent.requestPermission === 'function') {
+    addLog('iOS izin isteniyor...');
+    try {
+      var result = await DeviceMotionEvent.requestPermission();
+      addLog('Sonuç: ' + result);
+      if (result === 'granted') {
+        addLog('✅ İzin verildi! Sensör dinleniyor...');
+        window.addEventListener('devicemotion', function(e) {
+          var a = e.accelerationIncludingGravity;
+          if (a) addLog('Hareket: x=' + (a.x||0).toFixed(1) + ' y=' + (a.y||0).toFixed(1) + ' z=' + (a.z||0).toFixed(1));
+        });
+      }
+    } catch(e) {
+      addLog('❌ Hata: ' + e.message);
+    }
+  } else {
+    addLog('Android/diğer — direkt dinleniyor...');
+    window.addEventListener('devicemotion', function(e) {
+      var a = e.accelerationIncludingGravity;
+      if (a) addLog('Hareket: x=' + (a.x||0).toFixed(1));
+    });
+  }
+});
+</script>
+</body>
+</html>
