@@ -570,15 +570,30 @@ function renderSteps(){
 
 async function toggleCounting(){
   if(!counting){
-    if(!counting_permission){
-      if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
-        try{const r=await DeviceMotionEvent.requestPermission();if(r!=='granted'){alert('Sensör izni verilmedi. Manuel ekleme kullanabilirsin.');return;}}
-        catch(e){alert('İzin isteği başarısız.');return;}
+    // iOS requires DeviceMotionEvent.requestPermission() called directly from user gesture
+    if(typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function'){
+      let permission;
+      try {
+        permission = await DeviceMotionEvent.requestPermission();
+      } catch(e) {
+        permission = 'denied';
       }
-      counting_permission=true;
+      if(permission !== 'granted'){
+        const ss=document.getElementById('sensorStatus'), st=document.getElementById('sensorText');
+        if(ss) ss.className='sensor-status sensor-inactive';
+        if(st) st.textContent='⚠️ İzin verilmedi — manuel ekleme kullanabilirsin';
+        return;
+      }
+    } else if(typeof DeviceMotionEvent === 'undefined'){
+      // Desktop or unsupported — just simulate
+      const st=document.getElementById('sensorText');
+      if(st) st.textContent='⚠️ Bu cihaz sensörü desteklemiyor';
+      return;
     }
     counting=true; startMotion();
-  } else {counting=false; stopMotion();}
+  } else {
+    counting=false; stopMotion();
+  }
   renderSteps();
 }
 
