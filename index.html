@@ -170,8 +170,8 @@
         <span id="sensorText">Başlatmak için butona bas</span>
       </div>
       <div style="display:flex;gap:10px">
-        <button class="btn btn-primary" id="startBtn" onclick="toggleCounting()">▶ Başlat</button>
-        <button class="btn btn-ghost" onclick="resetSteps()">Sıfırla</button>
+        <button class="btn btn-primary" id="startBtn">▶ Başlat</button>
+        <button class="btn btn-ghost" id="resetBtn">Sıfırla</button>
       </div>
     </div>
     <div class="card">
@@ -681,6 +681,13 @@ function renderNutrition(){
 function removeFood(id){foods=foods.filter(f=>f.id!==id);renderNutrition();renderDashboard();}
 
 function renderAll(){renderDashboard();renderSteps();renderNutrition();}
+
+document.addEventListener("DOMContentLoaded",function(){
+  var s=document.getElementById("startBtn");
+  var r=document.getElementById("resetBtn");
+  if(s) s.addEventListener("click",function(){toggleCounting();});
+  if(r) r.addEventListener("click",function(){resetSteps();});
+});
 </script>
 </body>
 </html>
