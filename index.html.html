@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>VitaTrack</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#080b10;--card:#0f1318;--surface:#161c24;--border:#1e2733;
+    --accent:#00e5a0;--gold:#f5c842;--rose:#ff5f7e;--blue:#4db8ff;--purple:#b57bff;
+    --text:#dde6f0;--muted:#4a5a6a;--muted2:#2a3544;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;min-height:100vh;padding-bottom:90px;overflow-x:hidden}
+  .header{padding:48px 20px 14px;background:linear-gradient(180deg,#0a0e14,transparent);display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+  .logo{width:40px;height:40px;background:var(--accent);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 0 20px #00e5a055;flex-shrink:0}
+  .header-title{font-size:19px;font-weight:800;letter-spacing:-.5px}
+  .header-sub{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:1px}
+  .tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:72px;z-index:99}
+  .tab{flex:1;padding:13px 4px;text-align:center;font-size:12px;font-weight:600;color:var(--muted);border:none;background:none;border-bottom:2px solid transparent;cursor:pointer;transition:all .2s;letter-spacing:.2px;font-family:'Outfit',sans-serif}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .content{padding:16px;max-width:480px;margin:0 auto}
+  .page{display:none;flex-direction:column;gap:14px}
+  .page.active{display:flex}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px;position:relative;overflow:hidden}
+  .card-title{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px}
+  .btn{border:none;border-radius:50px;font-family:'Outfit',sans-serif;font-weight:700;cursor:pointer;transition:all .25s;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+  .btn-primary{background:var(--accent);color:#000;padding:14px 36px;font-size:15px;box-shadow:0 0 24px #00e5a044}
+  .btn-danger{background:var(--rose);color:#fff;padding:14px 36px;font-size:15px;box-shadow:0 0 24px #ff5f7e44}
+  .btn-ghost{background:none;border:1px solid var(--border);color:var(--muted);padding:9px 18px;font-size:13px}
+  .btn-chip{background:var(--surface);border:1px solid var(--border);color:var(--accent);padding:8px 14px;font-size:12px;font-family:'DM Mono',monospace;border-radius:10px;cursor:pointer}
+  .btn:active{transform:scale(.96)}
+
+  /* STEP RING */
+  .step-hero{display:flex;flex-direction:column;align-items:center;gap:16px;padding:24px 20px}
+  .step-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,#00e5a00d,transparent 70%)}
+  .ring-wrap{position:relative}
+  .ring-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+  .ring-steps{font-family:'DM Mono',monospace;font-size:36px;font-weight:500;color:var(--accent);line-height:1}
+  .ring-goal{font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)}
+  .ring-emoji{font-size:20px;margin-top:4px}
+  .sensor-status{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:12px;font-size:12px;font-family:'DM Mono',monospace}
+  .sensor-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .sensor-active{background:var(--surface);color:var(--accent)}
+  .sensor-active .sensor-dot{background:var(--accent);box-shadow:0 0 6px var(--accent);animation:pulse 1.5s ease-in-out infinite}
+  .sensor-inactive{background:var(--surface);color:var(--muted)}
+  .sensor-inactive .sensor-dot{background:var(--muted)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .stat-box{background:var(--surface);border-radius:14px;padding:14px 10px;text-align:center}
+  .stat-icon{font-size:20px;margin-bottom:6px}
+  .stat-val{font-family:'DM Mono',monospace;font-size:18px;font-weight:500}
+  .stat-lbl{font-size:10px;color:var(--muted);margin-top:2px}
+  .chip-row{display:flex;gap:8px;flex-wrap:wrap}
+
+  /* FOOD SEARCH */
+  .search-wrap{position:relative}
+  .food-input{width:100%;padding:13px 16px;background:var(--surface);border:1px solid var(--border);border-radius:14px;color:var(--text);font-size:14px;font-family:'Outfit',sans-serif;outline:none;transition:border-color .2s}
+  .food-input:focus{border-color:#00e5a088}
+  .food-input::placeholder{color:var(--muted)}
+  .dropdown{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:14px;z-index:200;max-height:280px;overflow-y:auto;box-shadow:0 8px 32px #00000088;display:none}
+  .dropdown.open{display:block}
+  .dd-item{padding:13px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s}
+  .dd-item:last-child{border-bottom:none}
+  .dd-item:active{background:var(--surface)}
+  .dd-name{font-size:14px;font-weight:600}
+  .dd-cals{font-size:12px;color:var(--accent);font-family:'DM Mono',monospace;margin-top:2px}
+  .dd-macros{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:1px}
+  .dd-empty{padding:16px;text-align:center;color:var(--muted);font-size:13px}
+
+  /* PORTION */
+  .portion-row{display:flex;gap:8px;margin-top:10px;align-items:center}
+  .portion-input{flex:1;padding:11px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;font-family:'DM Mono',monospace;outline:none}
+  .portion-unit{font-size:13px;color:var(--muted);white-space:nowrap}
+  .add-food-btn{padding:11px 20px;background:var(--accent);border:none;border-radius:12px;color:#000;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s}
+  .add-food-btn:active{transform:scale(.95)}
+
+  /* PROGRESS */
+  .prog-row{margin-bottom:14px}
+  .prog-header{display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;font-weight:600}
+  .prog-val{font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)}
+  .prog-track{height:6px;background:var(--muted2);border-radius:99px;overflow:hidden}
+  .prog-fill{height:100%;border-radius:99px;transition:width .7s cubic-bezier(.4,0,.2,1)}
+
+  /* MACRO GRID */
+  .macro-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .macro-box{background:var(--surface);border-radius:14px;padding:14px}
+  .macro-num{font-family:'DM Mono',monospace;font-size:22px;font-weight:500}
+  .macro-unit{font-size:11px;color:var(--muted)}
+  .macro-name{font-size:12px;color:var(--muted);margin-top:4px}
+  .micro-row{margin-bottom:13px}
+  .micro-header{display:flex;justify-content:space-between;margin-bottom:5px}
+  .micro-name{font-size:13px;font-weight:500}
+  .micro-val{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)}
+  .micro-track{height:4px;background:var(--muted2);border-radius:99px}
+  .micro-fill{height:100%;border-radius:99px;transition:width .7s ease}
+  .food-item{background:var(--surface);border-radius:14px;padding:13px 14px;display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+  .food-item-name{font-size:14px;font-weight:600;margin-bottom:3px}
+  .food-item-portion{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:6px}
+  .food-macros{display:flex;gap:10px;flex-wrap:wrap}
+  .food-macro-tag{font-family:'DM Mono',monospace;font-size:11px}
+  .del-btn{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 6px}
+  .macro-rings{display:flex;justify-content:space-around;align-items:center}
+  .macro-ring-wrap{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .macro-ring-lbl{font-size:10px;color:var(--muted);letter-spacing:.5px;font-weight:600;text-transform:uppercase}
+  .empty{text-align:center;padding:48px 20px;color:var(--muted)}
+  .empty-icon{font-size:52px;margin-bottom:12px}
+  .empty-title{font-size:15px;font-weight:600;margin-bottom:4px}
+  .empty-sub{font-size:13px}
+  .selected-food-preview{background:var(--surface);border-radius:12px;padding:12px 14px;margin-top:10px;display:none}
+  .sfp-name{font-size:14px;font-weight:700;margin-bottom:4px}
+  .sfp-per{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:8px}
+  .sfp-macros{display:flex;gap:12px;flex-wrap:wrap}
+  .sfp-tag{font-size:12px;font-family:'DM Mono',monospace}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">💚</div>
+  <div>
+    <div class="header-title">VitaTrack</div>
+    <div class="header-sub" id="dateLabel"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('dashboard')">📊 Özet</button>
+  <button class="tab" onclick="switchTab('steps')">👟 Adım</button>
+  <button class="tab" onclick="switchTab('nutrition')">🥗 Beslenme</button>
+</div>
+
+<div class="content">
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="card">
+      <div class="card-title">Günlük Makrolar</div>
+      <div class="macro-rings" id="macroRings"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" id="dashStats"></div>
+    <div class="card">
+      <div class="card-title">Hedefler</div>
+      <div id="dashProgress"></div>
+    </div>
+  </div>
+
+  <!-- STEPS -->
+  <div class="page" id="page-steps">
+    <div class="card step-hero">
+      <div class="ring-wrap">
+        <svg width="210" height="210" style="transform:rotate(-90deg)">
+          <circle cx="105" cy="105" r="92" fill="none" stroke="#1e2733" stroke-width="13"/>
+          <circle id="stepRingArc" cx="105" cy="105" r="92" fill="none" stroke="#00e5a0" stroke-width="13"
+            stroke-dasharray="0 578" stroke-linecap="round"
+            style="transition:stroke-dasharray .5s ease;filter:drop-shadow(0 0 10px #00e5a0)"/>
+        </svg>
+        <div class="ring-label">
+          <div class="ring-steps" id="stepDisplay">0</div>
+          <div class="ring-goal">/ 10.000</div>
+          <div class="ring-emoji" id="stepEmoji">🧍</div>
+        </div>
+      </div>
+      <div class="sensor-status sensor-inactive" id="sensorStatus">
+        <div class="sensor-dot"></div>
+        <span id="sensorText">Başlatmak için butona bas</span>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary" id="startBtn" onclick="toggleCounting()">▶ Başlat</button>
+        <button class="btn btn-ghost" onclick="resetSteps()">Sıfırla</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">İstatistikler</div>
+      <div class="stat-grid" id="stepStats"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Manuel Ekle</div>
+      <div class="chip-row" id="manualChips"></div>
+    </div>
+  </div>
+
+  <!-- NUTRITION -->
+  <div class="page" id="page-nutrition">
+    <div class="card">
+      <div style="font-size:14px;font-weight:700;margin-bottom:12px">🔍 Yiyecek Ara</div>
+      <div class="search-wrap">
+        <input class="food-input" id="foodSearch" placeholder="Yiyecek adı yaz... (örn: yumurta)" autocomplete="off" oninput="onSearch(this.value)" onfocus="onSearch(this.value)">
+        <div class="dropdown" id="dropdown"></div>
+      </div>
+      <div class="selected-food-preview" id="selectedPreview">
+        <div class="sfp-name" id="prevName"></div>
+        <div class="sfp-per" id="prevPer"></div>
+        <div class="sfp-macros" id="prevMacros"></div>
+        <div class="portion-row">
+          <input class="portion-input" id="portionInput" type="number" value="100" min="1" max="5000" oninput="updatePreview()">
+          <span class="portion-unit" id="portionUnit">g</span>
+          <button class="add-food-btn" onclick="confirmAdd()">Ekle ✓</button>
+        </div>
+      </div>
+      <!-- Kategori hızlı erişim -->
+      <div style="margin-top:14px">
+        <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Hızlı Seç</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap" id="categoryChips"></div>
+      </div>
+    </div>
+
+    <div class="card" id="macroSummaryCard" style="display:none">
+      <div class="card-title">Toplam Makrolar</div>
+      <div class="macro-grid" id="macroSummary"></div>
+    </div>
+    <div class="card" id="microCard" style="display:none">
+      <div class="card-title">Mikro Besinler</div>
+      <div id="microNutrients"></div>
+    </div>
+    <div class="card" id="foodListCard" style="display:none">
+      <div class="card-title">Bugün Yediklerim</div>
+      <div id="foodList"></div>
+    </div>
+    <div class="empty" id="emptyState">
+      <div class="empty-icon">🥗</div>
+      <div class="empty-title">Henüz yiyecek eklemediniz</div>
+      <div class="empty-sub">Yukarıdan arama yaparak ekleyebilirsiniz</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ════════════════════════════════════════════
+// YİYECEK VERİTABANI — 100g başına değerler
+// cal, pro(g), carb(g), fat(g), fib(g), sug(g), sod(mg), vitC(mg), ca(mg), fe(mg), pot(mg)
+// ════════════════════════════════════════════
+const DB = [
+  // KAHVALTI
+  {id:1,  cat:'🍳 Kahvaltı',   name:'Yumurta (haşlanmış)',    unit:'adet', unitG:50,  c:78,  p:6.3, k:0.6, y:5.3, f:0,   s:0.6, so:62,  vc:0,  ca:25,  fe:0.9, po:63},
+  {id:2,  cat:'🍳 Kahvaltı',   name:'Yumurta (sahanda)',      unit:'adet', unitG:46,  c:90,  p:6.3, k:0.4, y:7.3, f:0,   s:0.4, so:95,  vc:0,  ca:24,  fe:0.9, po:68},
+  {id:3,  cat:'🍳 Kahvaltı',   name:'Menemen (1 porsiyon)',   unit:'porsiyon', unitG:250, c:210, p:12,  k:14,  y:13,  f:2,   s:7,   so:420, vc:25, ca:80,  fe:2.1, po:380},
+  {id:4,  cat:'🍳 Kahvaltı',   name:'Beyaz peynir',           unit:'g',    unitG:1,   c:265, p:18,  k:2.2, y:20,  f:0,   s:2.2, so:1200,vc:0,  ca:520, fe:0.5, po:70},
+  {id:5,  cat:'🍳 Kahvaltı',   name:'Kaşar peyniri',          unit:'g',    unitG:1,   c:387, p:25,  k:1.3, y:31,  f:0,   s:1.3, so:680, vc:0,  ca:740, fe:0.3, po:95},
+  {id:6,  cat:'🍳 Kahvaltı',   name:'Tereyağı',               unit:'g',    unitG:1,   c:717, p:0.9, k:0.1, y:81,  f:0,   s:0.1, so:11,  vc:0,  ca:24,  fe:0.02,po:24},
+  {id:7,  cat:'🍳 Kahvaltı',   name:'Zeytin (yeşil)',         unit:'adet', unitG:5,   c:145, p:1,   k:3.8, y:15,  f:3.3, s:0,   so:1560,vc:0,  ca:52,  fe:0.5, po:8},
+  {id:8,  cat:'🍳 Kahvaltı',   name:'Zeytin (siyah)',         unit:'adet', unitG:5,   c:115, p:0.8, k:6.3, y:10,  f:3.2, s:0,   so:735, vc:0,  ca:88,  fe:3.3, po:8},
+  {id:9,  cat:'🍳 Kahvaltı',   name:'Bal',                    unit:'yemek kaşığı', unitG:21, c:304, p:0.3, k:82,  y:0,   f:0.2, s:82,  so:4,   vc:0.5,ca:6,   fe:0.4, po:52},
+  {id:10, cat:'🍳 Kahvaltı',   name:'Reçel',                  unit:'yemek kaşığı', unitG:20, c:278, p:0.4, k:69,  y:0.1, f:1,   s:65,  so:32,  vc:5,  ca:12,  fe:0.5, po:77},
+
+  // EKMEK & TAHILLAR
+  {id:11, cat:'🍞 Ekmek & Tahıl', name:'Beyaz ekmek',         unit:'dilim',unitG:30,  c:265, p:9,   k:49,  y:3.2, f:2.7, s:5,   so:491, vc:0,  ca:151, fe:3.6, po:115},
+  {id:12, cat:'🍞 Ekmek & Tahıl', name:'Tam buğday ekmeği',   unit:'dilim',unitG:30,  c:247, p:13,  k:41,  y:4.2, f:6.8, s:5.7, so:400, vc:0,  ca:73,  fe:3.9, po:248},
+  {id:13, cat:'🍞 Ekmek & Tahıl', name:'Simit',               unit:'adet', unitG:120, c:284, p:9.5, k:56,  y:3.2, f:2.1, s:3,   so:440, vc:0,  ca:40,  fe:2.8, po:120},
+  {id:14, cat:'🍞 Ekmek & Tahıl', name:'Pide',                unit:'dilim',unitG:80,  c:271, p:9,   k:51,  y:3.5, f:1.8, s:1,   so:430, vc:0,  ca:35,  fe:2.5, po:100},
+  {id:15, cat:'🍞 Ekmek & Tahıl', name:'Yulaf ezmesi (kuru)', unit:'g',    unitG:1,   c:379, p:13,  k:68,  y:6.5, f:10,  s:1,   so:7,   vc:0,  ca:52,  fe:4.3, po:362},
+  {id:16, cat:'🍞 Ekmek & Tahıl', name:'Makarna (pişmiş)',    unit:'g',    unitG:1,   c:131, p:5,   k:25,  y:1.1, f:1.8, s:0.6, so:1,   vc:0,  ca:7,   fe:1.3, po:45},
+  {id:17, cat:'🍞 Ekmek & Tahıl', name:'Pirinç pilavı (pişmiş)',unit:'g',  unitG:1,   c:130, p:2.7, k:28,  y:0.3, f:0.4, s:0,   so:1,   vc:0,  ca:10,  fe:0.2, po:35},
+  {id:18, cat:'🍞 Ekmek & Tahıl', name:'Bulgur pilavı (pişmiş)',unit:'g',  unitG:1,   c:83,  p:3.1, k:18,  y:0.2, f:4.5, s:0.2, so:5,   vc:0,  ca:10,  fe:0.96,po:68},
+
+  // ET & TAVUK
+  {id:20, cat:'🍗 Et & Tavuk', name:'Tavuk göğsü (ızgara)',   unit:'g',    unitG:1,   c:165, p:31,  k:0,   y:3.6, f:0,   s:0,   so:74,  vc:0,  ca:15,  fe:1,   po:256},
+  {id:21, cat:'🍗 Et & Tavuk', name:'Tavuk but (ızgara)',     unit:'g',    unitG:1,   c:209, p:26,  k:0,   y:11,  f:0,   s:0,   so:84,  vc:0,  ca:14,  fe:1.1, po:240},
+  {id:22, cat:'🍗 Et & Tavuk', name:'Dana kıyma (pişmiş)',    unit:'g',    unitG:1,   c:218, p:26,  k:0,   y:12,  f:0,   s:0,   so:75,  vc:0,  ca:18,  fe:2.7, po:270},
+  {id:23, cat:'🍗 Et & Tavuk', name:'Dana biftek',            unit:'g',    unitG:1,   c:271, p:26,  k:0,   y:18,  f:0,   s:0,   so:59,  vc:0,  ca:18,  fe:2.6, po:318},
+  {id:24, cat:'🍗 Et & Tavuk', name:'Kuzu but',               unit:'g',    unitG:1,   c:258, p:25,  k:0,   y:17,  f:0,   s:0,   so:72,  vc:0,  ca:16,  fe:2.5, po:310},
+  {id:25, cat:'🍗 Et & Tavuk', name:'Hindi göğsü',            unit:'g',    unitG:1,   c:135, p:30,  k:0,   y:1,   f:0,   s:0,   so:70,  vc:0,  ca:16,  fe:1.4, po:349},
+  {id:26, cat:'🍗 Et & Tavuk', name:'Sucuk',                  unit:'dilim',unitG:10,  c:450, p:22,  k:1.2, y:39,  f:0,   s:0,   so:1400,vc:0,  ca:19,  fe:3,   po:290},
+  {id:27, cat:'🍗 Et & Tavuk', name:'Salam',                  unit:'dilim',unitG:15,  c:302, p:12,  k:2.3, y:27,  f:0,   s:0.8, so:1250,vc:0,  ca:16,  fe:1.4, po:190},
+
+  // BALIK & DENİZ
+  {id:30, cat:'🐟 Balık',      name:'Somon (ızgara)',          unit:'g',    unitG:1,   c:208, p:20,  k:0,   y:13,  f:0,   s:0,   so:59,  vc:3.9,ca:12,  fe:0.8, po:363},
+  {id:31, cat:'🐟 Balık',      name:'Hamsi (tava)',            unit:'g',    unitG:1,   c:131, p:20,  k:0,   y:5,   f:0,   s:0,   so:104, vc:0,  ca:148, fe:2.9, po:383},
+  {id:32, cat:'🐟 Balık',      name:'Levrek (fırın)',          unit:'g',    unitG:1,   c:97,  p:18,  k:0,   y:2,   f:0,   s:0,   so:75,  vc:0,  ca:17,  fe:0.3, po:295},
+  {id:33, cat:'🐟 Balık',      name:'Ton balığı (konserve)',   unit:'g',    unitG:1,   c:116, p:26,  k:0,   y:1,   f:0,   s:0,   so:333, vc:0,  ca:14,  fe:1.3, po:214},
+
+  // SEBZE
+  {id:40, cat:'🥦 Sebze',      name:'Domates',                 unit:'adet', unitG:120, c:18,  p:0.9, k:3.9, y:0.2, f:1.2, s:2.6, so:5,   vc:14, ca:10,  fe:0.3, po:237},
+  {id:41, cat:'🥦 Sebze',      name:'Salatalık',               unit:'adet', unitG:200, c:15,  p:0.7, k:3.6, y:0.1, f:0.5, s:1.7, so:2,   vc:2.8,ca:16,  fe:0.3, po:147},
+  {id:42, cat:'🥦 Sebze',      name:'Havuç',                   unit:'adet', unitG:80,  c:41,  p:0.9, k:10,  y:0.2, f:2.8, s:4.7, so:69,  vc:5.9,ca:33,  fe:0.3, po:320},
+  {id:43, cat:'🥦 Sebze',      name:'Ispanak (pişmiş)',        unit:'g',    unitG:1,   c:23,  p:3,   k:3.8, y:0.3, f:2.2, s:0.4, so:70,  vc:9.8,ca:136, fe:3.6, po:466},
+  {id:44, cat:'🥦 Sebze',      name:'Brokoli (pişmiş)',        unit:'g',    unitG:1,   c:35,  p:2.4, k:7.2, y:0.4, f:3.3, s:1.7, so:41,  vc:65, ca:40,  fe:0.7, po:293},
+  {id:45, cat:'🥦 Sebze',      name:'Patates (haşlanmış)',     unit:'adet', unitG:150, c:77,  p:2,   k:17,  y:0.1, f:1.8, s:0.8, so:6,   vc:13, ca:12,  fe:0.8, po:421},
+  {id:46, cat:'🥦 Sebze',      name:'Soğan',                   unit:'adet', unitG:100, c:40,  p:1.1, k:9.3, y:0.1, f:1.7, s:4.2, so:4,   vc:7.4,ca:23,  fe:0.2, po:146},
+  {id:47, cat:'🥦 Sebze',      name:'Biber (yeşil)',           unit:'adet', unitG:80,  c:20,  p:0.9, k:4.6, y:0.2, f:1.7, s:2.4, so:3,   vc:80, ca:10,  fe:0.4, po:175},
+  {id:48, cat:'🥦 Sebze',      name:'Patlıcan (fırın)',        unit:'g',    unitG:1,   c:25,  p:1,   k:5.7, y:0.2, f:3,   s:3.5, so:2,   vc:2.2,ca:9,   fe:0.2, po:230},
+  {id:49, cat:'🥦 Sebze',      name:'Kabak',                   unit:'adet', unitG:200, c:17,  p:1.2, k:3.1, y:0.3, f:1,   s:2.5, so:2,   vc:17, ca:16,  fe:0.4, po:261},
+
+  // MEYVE
+  {id:50, cat:'🍎 Meyve',      name:'Elma',                    unit:'adet', unitG:180, c:52,  p:0.3, k:14,  y:0.2, f:2.4, s:10,  so:1,   vc:4.6,ca:6,   fe:0.1, po:107},
+  {id:51, cat:'🍎 Meyve',      name:'Muz',                     unit:'adet', unitG:120, c:89,  p:1.1, k:23,  y:0.3, f:2.6, s:12,  so:1,   vc:8.7,ca:5,   fe:0.3, po:358},
+  {id:52, cat:'🍎 Meyve',      name:'Portakal',                unit:'adet', unitG:200, c:47,  p:0.9, k:12,  y:0.1, f:2.4, s:9.4, so:0,   vc:53, ca:40,  fe:0.1, po:181},
+  {id:53, cat:'🍎 Meyve',      name:'Çilek',                   unit:'g',    unitG:1,   c:33,  p:0.7, k:7.7, y:0.3, f:2,   s:4.9, so:1,   vc:59, ca:16,  fe:0.4, po:153},
+  {id:54, cat:'🍎 Meyve',      name:'Üzüm',                    unit:'g',    unitG:1,   c:67,  p:0.6, k:17,  y:0.2, f:0.9, s:16,  so:1,   vc:10, ca:14,  fe:0.4, po:191},
+  {id:55, cat:'🍎 Meyve',      name:'Karpuz',                  unit:'dilim',unitG:300, c:30,  p:0.6, k:7.6, y:0.2, f:0.4, s:6.2, so:1,   vc:8.1,ca:7,   fe:0.2, po:112},
+  {id:56, cat:'🍎 Meyve',      name:'Kavun',                   unit:'dilim',unitG:250, c:34,  p:0.8, k:8.2, y:0.2, f:0.9, s:8,   so:16,  vc:36, ca:9,   fe:0.2, po:267},
+  {id:57, cat:'🍎 Meyve',      name:'Armut',                   unit:'adet', unitG:180, c:57,  p:0.4, k:15,  y:0.1, f:3.1, s:9.8, so:1,   vc:4.3,ca:9,   fe:0.2, po:116},
+
+  // BAKLIYAT
+  {id:60, cat:'🫘 Bakliyat',   name:'Mercimek (pişmiş)',       unit:'g',    unitG:1,   c:116, p:9,   k:20,  y:0.4, f:7.9, s:1.8, so:2,   vc:1.5,ca:19,  fe:3.3, po:369},
+  {id:61, cat:'🫘 Bakliyat',   name:'Nohut (pişmiş)',          unit:'g',    unitG:1,   c:164, p:8.9, k:27,  y:2.6, f:7.6, s:4.8, so:7,   vc:1.3,ca:49,  fe:2.9, po:291},
+  {id:62, cat:'🫘 Bakliyat',   name:'Fasulye (pişmiş)',        unit:'g',    unitG:1,   c:127, p:8.7, k:23,  y:0.5, f:6.4, s:0.3, so:2,   vc:0,  ca:50,  fe:2.9, po:405},
+  {id:63, cat:'🫘 Bakliyat',   name:'Kuru fasulye yemeği',     unit:'porsiyon', unitG:250, c:170,p:10,k:28,  y:3,   f:9,   s:2,   so:500, vc:1,  ca:70,  fe:3,   po:450},
+
+  // SÜT ÜRÜNLERİ
+  {id:70, cat:'🥛 Süt Ürünleri', name:'Süt (tam yağlı)',       unit:'ml',   unitG:1,   c:61,  p:3.2, k:4.8, y:3.3, f:0,   s:5,   so:43,  vc:0,  ca:113, fe:0,   po:150},
+  {id:71, cat:'🥛 Süt Ürünleri', name:'Yoğurt (tam yağlı)',    unit:'g',    unitG:1,   c:61,  p:3.5, k:4.7, y:3.3, f:0,   s:4.7, so:46,  vc:0.5,ca:121, fe:0.1, po:155},
+  {id:72, cat:'🥛 Süt Ürünleri', name:'Ayran',                 unit:'ml',   unitG:1,   c:35,  p:2,   k:3,   y:1.5, f:0,   s:3,   so:55,  vc:0,  ca:75,  fe:0,   po:95},
+  {id:73, cat:'🥛 Süt Ürünleri', name:'Labne',                 unit:'g',    unitG:1,   c:150, p:10,  k:3.5, y:11,  f:0,   s:3.5, so:200, vc:0,  ca:140, fe:0.1, po:170},
+
+  // KURUYEMIŞ
+  {id:80, cat:'🥜 Kuruyemiş',  name:'Badem',                   unit:'adet', unitG:1.2, c:579, p:21,  k:22,  y:50,  f:12.5,s:4.4, so:1,   vc:0,  ca:264, fe:3.7, po:733},
+  {id:81, cat:'🥜 Kuruyemiş',  name:'Ceviz',                   unit:'adet', unitG:5,   c:654, p:15,  k:14,  y:65,  f:6.7, s:2.6, so:2,   vc:1.3,ca:98,  fe:2.9, po:441},
+  {id:82, cat:'🥜 Kuruyemiş',  name:'Fıstık (kavrulmuş)',      unit:'g',    unitG:1,   c:567, p:26,  k:16,  y:49,  f:8.5, s:4,   so:3,   vc:0,  ca:54,  fe:1.6, po:631},
+  {id:83, cat:'🥜 Kuruyemiş',  name:'Fındık',                  unit:'adet', unitG:1.5, c:628, p:15,  k:17,  y:61,  f:9.7, s:4.3, so:0,   vc:6.3,ca:114, fe:4.7, po:680},
+
+  // TÜRK YEMEKLERİ
+  {id:90, cat:'🫕 Türk Yemekleri', name:'İmam bayıldı',        unit:'porsiyon', unitG:300, c:150,p:2.5,k:12, y:10,  f:4,   s:6,   so:600, vc:15, ca:40,  fe:1.2, po:480},
+  {id:91, cat:'🫕 Türk Yemekleri', name:'Kısır',               unit:'porsiyon', unitG:200, c:130,p:4,  k:26, y:2.5, f:5,   s:3,   so:400, vc:20, ca:35,  fe:2,   po:300},
+  {id:92, cat:'🫕 Türk Yemekleri', name:'Dolma (yaprak)',       unit:'adet', unitG:20,  c:100, p:2.5, k:15,  y:3,   f:1.5, s:1,   so:250, vc:2,  ca:25,  fe:0.7, po:90},
+  {id:93, cat:'🫕 Türk Yemekleri', name:'Köfte (pişmiş)',       unit:'adet', unitG:40,  c:235, p:16,  k:8,   y:15,  f:0.5, s:0.5, so:480, vc:0,  ca:25,  fe:2.2, po:250},
+  {id:94, cat:'🫕 Türk Yemekleri', name:'Çorba (mercimek)',     unit:'kase', unitG:250, c:70,  p:4,   k:12,  y:1,   f:3,   s:1,   so:550, vc:2,  ca:25,  fe:1.5, po:200},
+  {id:95, cat:'🫕 Türk Yemekleri', name:'Çorba (ezogelin)',     unit:'kase', unitG:250, c:75,  p:4.5, k:13,  y:1.5, f:3.5, s:1,   so:600, vc:1,  ca:30,  fe:1.8, po:220},
+  {id:96, cat:'🫕 Türk Yemekleri', name:'Kebap (şiş tavuk)',    unit:'porsiyon', unitG:200, c:180,p:28, k:2,  y:6,   f:0,   s:0.5, so:450, vc:0,  ca:20,  fe:1.2, po:420},
+  {id:97, cat:'🫕 Türk Yemekleri', name:'Lahmacun',             unit:'adet', unitG:120, c:260, p:11,  k:35,  y:8,   f:2,   s:2,   so:480, vc:5,  ca:40,  fe:2.5, po:250},
+  {id:98, cat:'🫕 Türk Yemekleri', name:'Pide (kaşarlı)',       unit:'dilim',unitG:150, c:280, p:13,  k:36,  y:9,   f:1.5, s:2,   so:520, vc:0,  ca:180, fe:2.2, po:200},
+  {id:99, cat:'🫕 Türk Yemekleri', name:'Börek (su böreği)',    unit:'dilim',unitG:120, c:285, p:10,  k:28,  y:15,  f:1,   s:1,   so:580, vc:0,  ca:150, fe:1.8, po:130},
+  {id:100,cat:'🫕 Türk Yemekleri', name:'Gözleme (peynirli)',   unit:'adet', unitG:180, c:320, p:12,  k:38,  y:14,  f:2,   s:2,   so:620, vc:0,  ca:200, fe:2,   po:180},
+  {id:101,cat:'🫕 Türk Yemekleri', name:'Mücver',               unit:'adet', unitG:60,  c:155, p:5,   k:14,  y:9,   f:1.5, s:2,   so:320, vc:10, ca:80,  fe:1,   po:180},
+
+  // İÇECEK & ATIŞTIIRMALIK
+  {id:110,cat:'☕ İçecek',      name:'Çay (sade)',              unit:'bardak',unitG:200, c:2,   p:0,   k:0.4, y:0,   f:0,   s:0,   so:0,   vc:0,  ca:0,   fe:0,   po:37},
+  {id:111,cat:'☕ İçecek',      name:'Türk kahvesi (sade)',     unit:'fincan',unitG:60,  c:2,   p:0.3, k:0.4, y:0,   f:0,   s:0,   so:2,   vc:0,  ca:3,   fe:0.1, po:49},
+  {id:112,cat:'☕ İçecek',      name:'Portakal suyu (taze)',    unit:'ml',   unitG:1,   c:45,  p:0.7, k:10,  y:0.2, f:0.2, s:8.4, so:1,   vc:50, ca:11,  fe:0.2, po:200},
+  {id:113,cat:'🍫 Atıştırmalık',name:'Çikolata (sütlü)',       unit:'kare', unitG:10,  c:535, p:7.6, k:59,  y:30,  f:3.4, s:52,  so:79,  vc:0,  ca:189, fe:2.4, po:372},
+  {id:114,cat:'🍫 Atıştırmalık',name:'Bisküvi (petit beurre)', unit:'adet', unitG:7,   c:460, p:7,   k:70,  y:16,  f:2,   s:20,  so:380, vc:0,  ca:30,  fe:2,   po:120},
+  {id:115,cat:'🍫 Atıştırmalık',name:'Helva (tahin)',          unit:'g',    unitG:1,   c:469, p:11,  k:57,  y:23,  f:1.5, s:44,  so:125, vc:0,  ca:58,  fe:2.6, po:182},
+];
+
+// Kategoriler
+const CATS = [...new Set(DB.map(x => x.cat))];
+
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+let steps = 0, stepGoal = 10000, counting = false;
+let foods = [];
+let selectedFood = null;
+let counting_permission = false;
+let motionListener = null, lastAcc = null, lastStepTime = 0;
+const STEP_THR = 1.4, STEP_CD = 350;
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+document.getElementById('dateLabel').textContent =
+  new Date().toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'});
+
+// Category chips
+document.getElementById('categoryChips').innerHTML = CATS.map(c =>
+  `<button onclick="filterCat('${c}')" style="padding:5px 12px;background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:99px;font-size:11px;cursor:pointer;font-family:'DM Mono',monospace">${c}</button>`
+).join('');
+
+renderAll();
+
+// Close dropdown on outside click
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrap')) closeDropdown();
+});
+
+// ════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active',['dashboard','steps','nutrition'][i]===tab);
+  });
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  if(tab==='dashboard') renderDashboard();
+}
+
+// ════════════════════════════════════════════
+// FOOD SEARCH
+// ════════════════════════════════════════════
+function onSearch(q) {
+  q = q.trim().toLowerCase();
+  const dd = document.getElementById('dropdown');
+  if (!q) { dd.innerHTML=''; dd.classList.remove('open'); return; }
+
+  const results = DB.filter(f =>
+    f.name.toLowerCase().includes(q) || f.cat.toLowerCase().includes(q)
+  ).slice(0,12);
+
+  if (!results.length) {
+    dd.innerHTML = `<div class="dd-empty">Sonuç bulunamadı. Başka bir kelime dene.</div>`;
+  } else {
+    dd.innerHTML = results.map(f => {
+      const cals = Math.round(f.c * f.unitG / 100);
+      return `<div class="dd-item" onclick="selectFood(${f.id})">
+        <div class="dd-name">${f.name}</div>
+        <div class="dd-cals">${cals} kcal / ${f.unitG}${f.unit==='g'||f.unit==='ml'?f.unit:' '+f.unit}</div>
+        <div class="dd-macros">P:${(f.p*f.unitG/100).toFixed(1)}g · K:${(f.k*f.unitG/100).toFixed(1)}g · Y:${(f.y*f.unitG/100).toFixed(1)}g</div>
+      </div>`;
+    }).join('');
+  }
+  dd.classList.add('open');
+}
+
+function filterCat(cat) {
+  document.getElementById('foodSearch').value = cat.replace(/^.+?\s/,'');
+  onSearch(cat.replace(/^.+?\s/,''));
+}
+
+function closeDropdown() {
+  document.getElementById('dropdown').classList.remove('open');
+}
+
+function selectFood(id) {
+  selectedFood = DB.find(f=>f.id===id);
+  document.getElementById('foodSearch').value = selectedFood.name;
+  closeDropdown();
+  document.getElementById('portionInput').value = selectedFood.unitG;
+  document.getElementById('portionUnit').textContent = selectedFood.unit === 'g' ? 'g' : selectedFood.unit === 'ml' ? 'ml' : selectedFood.unit + ` (≈${selectedFood.unitG}g)`;
+  updatePreview();
+  document.getElementById('selectedPreview').style.display = 'block';
+}
+
+function updatePreview() {
+  if (!selectedFood) return;
+  const portion = parseFloat(document.getElementById('portionInput').value) || selectedFood.unitG;
+  const ratio = portion / 100;
+  // unitG'ye göre oran hesapla
+  const baseRatio = selectedFood.unitG / 100;
+  // Kullanıcı gram değil adet giriyorsa
+  const isUnit = !['g','ml'].includes(selectedFood.unit);
+  const actualRatio = isUnit ? (portion * selectedFood.unitG / 100) / 100 : ratio;
+
+  document.getElementById('prevName').textContent = selectedFood.name;
+  document.getElementById('prevPer').textContent = `${portion} ${selectedFood.unit} · ${Math.round(selectedFood.c * actualRatio)} kcal`;
+  document.getElementById('prevMacros').innerHTML = [
+    {l:'Protein',v:selectedFood.p,c:'#ff5f7e'},
+    {l:'Karbonhidrat',v:selectedFood.k,c:'#4db8ff'},
+    {l:'Yağ',v:selectedFood.y,c:'#b57bff'},
+    {l:'Lif',v:selectedFood.f,c:'#00e5a0'},
+  ].map(m=>`<span class="sfp-tag" style="color:${m.c}">${m.l}: ${(m.v*actualRatio).toFixed(1)}g</span>`).join('');
+}
+
+function confirmAdd() {
+  if (!selectedFood) return;
+  const portion = parseFloat(document.getElementById('portionInput').value) || selectedFood.unitG;
+  const isUnit = !['g','ml'].includes(selectedFood.unit);
+  const actualRatio = isUnit ? (portion * selectedFood.unitG / 100) / 100 : portion / 100;
+
+  foods.push({
+    id: Date.now(),
+    name: selectedFood.name,
+    portion: `${portion} ${selectedFood.unit}`,
+    nutrition: {
+      calories:  selectedFood.c  * actualRatio,
+      protein:   selectedFood.p  * actualRatio,
+      carbs:     selectedFood.k  * actualRatio,
+      fat:       selectedFood.y  * actualRatio,
+      fiber:     selectedFood.f  * actualRatio,
+      sugar:     selectedFood.s  * actualRatio,
+      sodium:    selectedFood.so * actualRatio,
+      vitaminC:  selectedFood.vc * actualRatio,
+      calcium:   selectedFood.ca * actualRatio,
+      iron:      selectedFood.fe * actualRatio,
+      potassium: selectedFood.po * actualRatio,
+    }
+  });
+
+  selectedFood = null;
+  document.getElementById('foodSearch').value = '';
+  document.getElementById('selectedPreview').style.display = 'none';
+  renderNutrition();
+  renderDashboard();
+}
+
+// ════════════════════════════════════════════
+// TOTALS
+// ════════════════════════════════════════════
+function getTotals() {
+  return foods.reduce((a,f)=>{
+    const n=f.nutrition||{};
+    return {
+      calories: a.calories+(n.calories||0), protein: a.protein+(n.protein||0),
+      carbs: a.carbs+(n.carbs||0), fat: a.fat+(n.fat||0), fiber: a.fiber+(n.fiber||0),
+      sugar: a.sugar+(n.sugar||0), sodium: a.sodium+(n.sodium||0),
+      vitaminC: a.vitaminC+(n.vitaminC||0), calcium: a.calcium+(n.calcium||0),
+      iron: a.iron+(n.iron||0), potassium: a.potassium+(n.potassium||0),
+    };
+  },{calories:0,protein:0,carbs:0,fat:0,fiber:0,sugar:0,sodium:0,vitaminC:0,calcium:0,iron:0,potassium:0});
+}
+
+// ════════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════════
+function svgRing(val,max,color,size=84,stroke=9){
+  const r=(size-stroke)/2,circ=2*Math.PI*r,pct=Math.min(val/max,1),dash=pct*circ;
+  return `<svg width="${size}" height="${size}" style="transform:rotate(-90deg)">
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#1e2733" stroke-width="${stroke}"/>
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}"
+      stroke-dasharray="${dash} ${circ}" stroke-linecap="round"
+      style="transition:stroke-dasharray .8s ease;filter:drop-shadow(0 0 6px ${color}88)"/>
+  </svg>`;
+}
+
+function renderDashboard(){
+  const t=getTotals(), burned=Math.round(steps*0.04), net=Math.round(t.calories)-burned;
+  const macros=[
+    {label:'KALORİ',val:t.calories,max:2000,color:'#f5c842'},
+    {label:'PROTEİN',val:t.protein,max:150,color:'#ff5f7e'},
+    {label:'KARBO',val:t.carbs,max:250,color:'#4db8ff'},
+    {label:'YAĞ',val:t.fat,max:65,color:'#b57bff'},
+  ];
+  document.getElementById('macroRings').innerHTML=macros.map(m=>`
+    <div class="macro-ring-wrap">
+      <div style="position:relative">${svgRing(m.val,m.max,m.color)}
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:${m.color}">${Math.round(m.val)}</span>
+          <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted)">/${m.max}</span>
+        </div>
+      </div>
+      <div class="macro-ring-lbl">${m.label}</div>
+    </div>`).join('');
+
+  document.getElementById('dashStats').innerHTML=[
+    {icon:'👟',val:steps.toLocaleString('tr'),unit:'adım',lbl:'Bugün',color:'#00e5a0'},
+    {icon:'🔥',val:burned,unit:'kcal',lbl:'Yakılan',color:'#ff5f7e'},
+    {icon:'🥗',val:Math.round(t.calories),unit:'kcal',lbl:'Alınan',color:'#f5c842'},
+    {icon:'⚖️',val:(net>=0?'+':'')+net,unit:'kcal',lbl:'Net',color:net>0?'#ff5f7e':'#00e5a0'},
+  ].map(s=>`<div style="background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px 16px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;right:0;width:50px;height:50px;background:${s.color};opacity:.08;border-radius:0 18px 0 50px"></div>
+    <div style="font-size:20px;margin-bottom:6px">${s.icon}</div>
+    <div style="font-family:'DM Mono',monospace;font-size:22px;font-weight:500;color:${s.color}">${s.val}</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:3px">${s.unit} · ${s.lbl}</div>
+  </div>`).join('');
+
+  document.getElementById('dashProgress').innerHTML=[
+    {label:'Adım',val:steps,max:stepGoal,color:'#00e5a0',unit:''},
+    {label:'Kalori',val:t.calories,max:2000,color:'#f5c842',unit:'kcal'},
+    {label:'Protein',val:t.protein,max:150,color:'#ff5f7e',unit:'g'},
+    {label:'Lif',val:t.fiber,max:30,color:'#4db8ff',unit:'g'},
+  ].map(p=>`<div class="prog-row">
+    <div class="prog-header"><span>${p.label}</span><span class="prog-val">${Math.round(p.val)} / ${p.max} ${p.unit}</span></div>
+    <div class="prog-track"><div class="prog-fill" style="width:${Math.min(p.val/p.max,1)*100}%;background:${p.color};box-shadow:0 0 6px ${p.color}66"></div></div>
+  </div>`).join('');
+}
+
+// ════════════════════════════════════════════
+// STEPS
+// ════════════════════════════════════════════
+function renderSteps(){
+  const arc=document.getElementById('stepRingArc');
+  if(arc) arc.setAttribute('stroke-dasharray',`${Math.min(steps/stepGoal,1)*578} 578`);
+  const sd=document.getElementById('stepDisplay'); if(sd) sd.textContent=steps.toLocaleString('tr');
+  const em=document.getElementById('stepEmoji'); if(em) em.textContent=counting?'🏃':steps>0?'🚶':'🧍';
+  const btn=document.getElementById('startBtn');
+  if(btn){btn.textContent=counting?'⏹ Durdur':'▶ Başlat';btn.className='btn '+(counting?'btn-danger':'btn-primary');}
+  const burned=Math.round(steps*0.04);
+  document.getElementById('stepStats').innerHTML=`
+    <div class="stat-box"><div class="stat-icon">🔥</div><div class="stat-val" style="color:#ff5f7e">${burned}</div><div class="stat-lbl">kcal yakıldı</div></div>
+    <div class="stat-box"><div class="stat-icon">📏</div><div class="stat-val" style="color:#4db8ff">${(steps*.00075).toFixed(2)}</div><div class="stat-lbl">km mesafe</div></div>
+    <div class="stat-box"><div class="stat-icon">⏱️</div><div class="stat-val" style="color:#b57bff">${Math.round(steps/100)}</div><div class="stat-lbl">dk süre</div></div>`;
+  document.getElementById('manualChips').innerHTML=
+    [500,1000,2500,5000].map(n=>`<button class="btn-chip" onclick="steps+=${n};renderAll()">+${n>=1000?(n/1000)+'k':n}</button>`).join('');
+}
+
+async function toggleCounting(){
+  if(!counting){
+    if(!counting_permission){
+      if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
+        try{const r=await DeviceMotionEvent.requestPermission();if(r!=='granted'){alert('Sensör izni verilmedi. Manuel ekleme kullanabilirsin.');return;}}
+        catch(e){alert('İzin isteği başarısız.');return;}
+      }
+      counting_permission=true;
+    }
+    counting=true; startMotion();
+  } else {counting=false; stopMotion();}
+  renderSteps();
+}
+
+function startMotion(){
+  motionListener=function(e){
+    const a=e.accelerationIncludingGravity||e.acceleration;
+    if(!a||a.x==null) return;
+    const mag=Math.sqrt(a.x*a.x+a.y*a.y+a.z*a.z);
+    if(lastAcc===null){lastAcc=mag;return;}
+    const delta=Math.abs(mag-lastAcc); lastAcc=mag;
+    const now=Date.now();
+    if(delta>STEP_THR&&(now-lastStepTime)>STEP_CD){lastStepTime=now;steps++;renderAll();}
+  };
+  window.addEventListener('devicemotion',motionListener);
+  const ss=document.getElementById('sensorStatus'),st=document.getElementById('sensorText');
+  if(ss){ss.className='sensor-status sensor-active';}
+  if(st){st.textContent='İvme ölçeri aktif — adımlar sayılıyor';}
+}
+
+function stopMotion(){
+  if(motionListener){window.removeEventListener('devicemotion',motionListener);motionListener=null;}
+  lastAcc=null;
+  const ss=document.getElementById('sensorStatus'),st=document.getElementById('sensorText');
+  if(ss){ss.className='sensor-status sensor-inactive';}
+  if(st){st.textContent='Sensör durduruldu';}
+}
+
+function resetSteps(){
+  steps=0; if(counting){counting=false;stopMotion();} renderAll();
+}
+
+// ════════════════════════════════════════════
+// NUTRITION RENDER
+// ════════════════════════════════════════════
+function renderNutrition(){
+  const t=getTotals(), has=foods.length>0;
+  document.getElementById('macroSummaryCard').style.display=has?'':'none';
+  document.getElementById('microCard').style.display=has?'':'none';
+  document.getElementById('foodListCard').style.display=has?'':'none';
+  document.getElementById('emptyState').style.display=has?'none':'';
+
+  if(has){
+    document.getElementById('macroSummary').innerHTML=[
+      {l:'Kalori',v:t.calories,u:'kcal',c:'#f5c842'},
+      {l:'Protein',v:t.protein,u:'g',c:'#ff5f7e'},
+      {l:'Karbonhidrat',v:t.carbs,u:'g',c:'#4db8ff'},
+      {l:'Yağ',v:t.fat,u:'g',c:'#b57bff'},
+      {l:'Lif',v:t.fiber,u:'g',c:'#00e5a0'},
+      {l:'Şeker',v:t.sugar,u:'g',c:'#f5c842'},
+    ].map(m=>`<div class="macro-box">
+      <div class="macro-num" style="color:${m.c}">${Math.round(m.v)}<span class="macro-unit"> ${m.u}</span></div>
+      <div class="macro-name">${m.l}</div>
+    </div>`).join('');
+
+    document.getElementById('microNutrients').innerHTML=[
+      {n:'Sodyum',v:t.sodium,u:'mg',rdi:2300,c:'#ff5f7e'},
+      {n:'Vitamin C',v:t.vitaminC,u:'mg',rdi:90,c:'#f5c842'},
+      {n:'Kalsiyum',v:t.calcium,u:'mg',rdi:1000,c:'#4db8ff'},
+      {n:'Demir',v:t.iron,u:'mg',rdi:18,c:'#b57bff'},
+      {n:'Potasyum',v:t.potassium,u:'mg',rdi:3500,c:'#00e5a0'},
+    ].map(m=>`<div class="micro-row">
+      <div class="micro-header"><span class="micro-name">${m.n}</span><span class="micro-val">${m.v.toFixed(1)} ${m.u}</span></div>
+      <div class="micro-track"><div class="micro-fill" style="width:${Math.min(m.v/m.rdi,1)*100}%;background:${m.c}"></div></div>
+    </div>`).join('');
+
+    document.getElementById('foodList').innerHTML=foods.map(f=>{
+      const n=f.nutrition||{};
+      return `<div class="food-item">
+        <div style="flex:1">
+          <div class="food-item-name">${f.name}</div>
+          <div class="food-item-portion">${f.portion}</div>
+          <div class="food-macros">
+            <span class="food-macro-tag" style="color:#f5c842">${Math.round(n.calories||0)} kcal</span>
+            <span class="food-macro-tag" style="color:#ff5f7e">P:${(n.protein||0).toFixed(1)}g</span>
+            <span class="food-macro-tag" style="color:#4db8ff">K:${(n.carbs||0).toFixed(1)}g</span>
+            <span class="food-macro-tag" style="color:#b57bff">Y:${(n.fat||0).toFixed(1)}g</span>
+          </div>
+        </div>
+        <button class="del-btn" onclick="removeFood(${f.id})">✕</button>
+      </div>`;
+    }).join('');
+  }
+}
+
+function removeFood(id){foods=foods.filter(f=>f.id!==id);renderNutrition();renderDashboard();}
+
+function renderAll(){renderDashboard();renderSteps();renderNutrition();}
+</script>
+</body>
+</html>
